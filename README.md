@@ -83,6 +83,5 @@ done
 [1]: https://mywiki.wooledge.org/BashPitfalls
 [2]: https://www.gnu.org/software/bash/manual/html_node/Arrays.html
 
-[1] [Bash pitfalls](https://mywiki.wooledge.org/BashPitfalls)
-
-[2] [Bash reference manual](https://www.gnu.org/software/bash/manual/html_node/Arrays.html)
+1. [Bash pitfalls](https://mywiki.wooledge.org/BashPitfalls)
+2. [Bash reference manual](https://www.gnu.org/software/bash/manual/html_node/Arrays.html)
