@@ -82,3 +82,6 @@ done
 
 [1]: https://mywiki.wooledge.org/BashPitfalls
 [2]: https://www.gnu.org/software/bash/manual/html_node/Arrays.html
+
++ [Bash pitfalls](https://mywiki.wooledge.org/BashPitfalls)
++ [Bash reference manual](https://www.gnu.org/software/bash/manual/html_node/Arrays.html)
