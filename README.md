@@ -1,10 +1,10 @@
 # Secure bash
 
-Tips for avoiding unexpected surprises in production bash scripts beyond those contained in [1]. 
+Tips for avoiding unexpected surprises in production bash scripts beyond those contained in [[1]]. 
 
 ## Strings in integer-valued variables
 
-As detailed in [2] (section 3.4), when a variable has its integer attribute, any value assigned to it undergoes arithmetic expansion. For example, the following snippet
+As detailed in [[2]] (section 3.4), when a variable has its integer attribute, any value assigned to it undergoes arithmetic expansion. For example, the following snippet
 ```
 unset A B
 declare -i A="B"
@@ -32,7 +32,7 @@ Consequently, to be on the safe side, remember that
 
 ## Overwritten indexed arrays
 
-As mentioned in [2], when indexed arrays are assigned, the index of the current element, when not supplied, is the one in the previous assignment plus unity, with indexes starting from zero. For example,
+As mentioned in [[2]], when indexed arrays are assigned, the index of the current element, when not supplied, is the one in the previous assignment plus unity, with indexes starting from zero. For example,
 ```
 declare -a A=(A [1]=B C [3]=D)
 ```
@@ -71,7 +71,7 @@ for i in $(seq 1 ${#A[@]}); do
     # Do something with A[i-1] ...
 done
 ```
-but, as detailed in [2], the following construction will certainly do
+but, as detailed in [[2]], the following construction will certainly do
 ```
 for i in ${!A[@]}; do 
     # Do something with A[i-1] ...
@@ -83,5 +83,6 @@ done
 [1]: https://mywiki.wooledge.org/BashPitfalls
 [2]: https://www.gnu.org/software/bash/manual/html_node/Arrays.html
 
-+ [Bash pitfalls](https://mywiki.wooledge.org/BashPitfalls)
-+ [Bash reference manual](https://www.gnu.org/software/bash/manual/html_node/Arrays.html)
+[1] [Bash pitfalls](https://mywiki.wooledge.org/BashPitfalls)
+
+[2] [Bash reference manual](https://www.gnu.org/software/bash/manual/html_node/Arrays.html)
