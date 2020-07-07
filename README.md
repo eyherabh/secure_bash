@@ -80,5 +80,5 @@ done
 
 ## References
 
-[1]: (https://mywiki.wooledge.org/BashPitfalls.)
-[2]: (https://www.gnu.org/software/bash/manual/html_node/Arrays.html)
+[1]: https://mywiki.wooledge.org/BashPitfalls
+[2]: https://www.gnu.org/software/bash/manual/html_node/Arrays.html
