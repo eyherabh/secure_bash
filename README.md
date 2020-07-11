@@ -87,6 +87,10 @@ for i in ${!A[@]}; do
 done
 ```
 
+## Assuming that `ls -a` starts with `.` and `..`
+
+The list produced by `ls -a` need not start with `.` followed by `..`. Instead, I found that files starting with `^`, `<`, `=`, `>`, `_`, `:`, `;`, `!`, and `?` are all listed before. The previous list is not exhaustive, and the listing order might well depend on the bash version and locale. Scripts simply excluding `.` and `..` can achieve this by using `ls -A`.
+
 ## References
 
 [1]: https://mywiki.wooledge.org/BashPitfalls
