@@ -1,6 +1,12 @@
 # Secure bash
 
 Notes and tips beyond those found in [[1]] to make bash scripts safer and more portabble.
+## [Strings in integer-valued variables](#strings-in-integer-valued-variables)
+## [Caution when mixing common and designated initializers](#caution-when-mixing-common-and-designated-initializers)
+## [Uninitialized array elements are left uninitialized](#uninitialized-array-elements-are-left-uninitialized)
+## [Incomplete traversal of indexed arrays](#incomplete-traversal-of-indexed-arrays)
+## [Assuming that `ls -a` starts with `.` and `..`](#assuming-that-ls-starts-with-.-and-..)
+
 
 ## Strings in integer-valued variables
 
@@ -30,7 +36,7 @@ Consequently, to be on the safe side, remember that
 + Activated attributes are no guarantee of enforced attributes.
 
 
-## Mixing common and designated initializers
+## Caution when mixing common and designated initializers
 
 As mentioned in [[2]], and analogously to [[3]], the index of the current element to be initialized is given in the initializer (a.k.a. designated initializers). If none is given, then it is equal to the index of the previously initialized element plus unity. If none were initialized, then it is zero. For example, the following line declares the indexed array `A` with four initializers
 ```
@@ -59,7 +65,7 @@ That is, in both cases, the value of `A[2]` was first assigned `B` and then sile
 Associative arrays require the index to be provided, thus rendering any multiple assignment more visible, but they still provide no way to avoid them or to be inform about them at run-time.
 
 
-## Uninitialized integer variables are left uninitialized
+## Uninitialized array elements are left uninitialized
 
 Unlike C [[3]], uninitialized array elements are left uninitialized, even if the integer attribute was set. That is, the following line
 ```
@@ -87,7 +93,7 @@ for i in ${!A[@]}; do
 done
 ```
 
-## Assuming that `ls -a` starts with `.` and `..`
+## Assuming that `ls` starts with `.` and `..`
 
 The list produced by `ls -a` need not start with `.` followed by `..`. Instead, I found that files starting with `^`, `<`, `=`, `>`, `_`, `:`, `;`, `!`, and `?` are all listed before. The previous list is not exhaustive, and the listing order might well depend on the bash version and locale. Scripts simply excluding `.` and `..` can achieve this by using `ls -A`.
 
