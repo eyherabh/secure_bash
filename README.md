@@ -6,7 +6,7 @@ Notes and tips beyond those found in [[1]] to make bash scripts safer and more p
 + [Caution when mixing common and designated initializers](#caution-when-mixing-common-and-designated-initializers)
 + [Uninitialized array elements are left uninitialized](#uninitialized-array-elements-are-left-uninitialized)
 + [Incomplete traversal of indexed arrays](#incomplete-traversal-of-indexed-arrays)
-+ [Assuming that `ls -a` starts with `.` and `..`](#assuming-that-ls-starts-with-.-and-..)
++ [Assuming that `ls` starts with `.` and `..`](#assuming-that-ls-starts-with-.-and-..)
 
 
 ## Strings in integer-valued variables
