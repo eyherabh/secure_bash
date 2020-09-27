@@ -7,6 +7,7 @@ Notes and tips beyond those found in [[1]] to make bash scripts safer and more p
 + [Uninitialized array elements are left uninitialized](#uninitialized-array-elements-are-left-uninitialized)
 + [Incomplete traversal of indexed arrays](#incomplete-traversal-of-indexed-arrays)
 + [Assuming that `ls` starts with `.` and `..`](#assuming-that-ls-starts-with-.-and-..)
++ [Associative arrays within functions cannot be made global](#associative-arrays-within-functions-cannot-be-made-global)
 
 
 ## Strings in integer-valued variables
@@ -96,7 +97,70 @@ done
 
 ## Assuming that `ls` starts with `.` and `..`
 
-The list produced by `ls -a` need not start with `.` followed by `..`. Instead, I found that files starting with `^`, `<`, `=`, `>`, `_`, `:`, `;`, `!`, and `?` are all listed before. The previous list is not exhaustive, and the listing order might well depend on the bash version and locale. Scripts simply excluding `.` and `..` can achieve this by using `ls -A`.
+The list produced by `ls -a` need not start with `.` followed by `..`, as for example. Instead, I found that files named `^`, `<`, `=`, `>`, `_`, `:`, `;`, `!`, and `?` are all listed first. For example, the files named `_` and `?` will not appear as below
+
+```bash
+> ls -a
+.
+..
+_
+?
+```
+but like this instead
+```bash
+> ls -a
+_
+?
+.
+..
+```
+The list of file names appearing before `.` and `..` mentioned above is not exhaustive, and their order of appearance might well depend on the bash version and locale. 
+
+Those file names may indeed be regarded as extremely unlikely, yet they may still occur by error or on purpose and break scripts. For example, a script relying on `.` and `..` appearing first may attempt to ignore them through `ls -1 | tail -n +3`. That script would have failed in the example above. Excluding them can be achieved through `ls -A`. 
+
+It may sound contrived that one would use `ls -1 | tail -n +3` instead of `ls -A`, particularly since the latter is shorter. However, one may well have ignored the latter construct and missed it when reading the man page for `ls`.
+
+
+## Associative arrays within functions cannot be made global
+
+Consider the following script
+```
+a() { 
+    declare -ag A=([0]=1 [1]=2) 
+    printf "Within a: $(declare -p A)\n"
+}
+
+b() { 
+    declare -Ag B=([0]=1 [1]=2) 
+    printf "Within b: $(declare -p B)\n"
+}
+
+unset -v A B
+
+a
+printf "After a: $(declare -p A)\n"
+
+b
+printf "After b: $(declare -p B)\n"
+```
+which produces the following output
+```
+Within a: declare -a A='([0]=1 [1]=2)'
+After a: declare -a A='([0]=1 [1]=2)'
+Within b: declare -A B='()'
+After b: declare -A B='()'
+```
+Turns out that the flag `-g` passed to `declare` causes associative arrays to be left empty. This is a known bug that has already been fixed, but it is still relevant, for example, in systems shipping bash 4.2 (e.g. CentOS 7).
+
+Analogous effects are observed when attempting to use `-g`, for example, in the same way as `-r`, that is
+```
+c() {
+    declare -a C=(1 2)
+    declare -g C
+}
+```
+This may be argued as documented and hence expected. Specifically, `help declare` states that the flag `-g` is used at the moment of creation as opposed to setting attributes. Nevertheless, current versions of bash seem to preserve the values, albeit not turning a variable previously declared as local into a global one.
+
 
 ## References
 
