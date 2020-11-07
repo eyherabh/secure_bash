@@ -8,6 +8,7 @@ Notes and tips beyond those found in [[1]] to make bash scripts safer and more p
 + [Incomplete traversal of indexed arrays](#incomplete-traversal-of-indexed-arrays)
 + [Strings in integer-valued variables](#strings-in-integer-valued-variables)
 + [Uninitialized array elements are left uninitialized](#uninitialized-array-elements-are-left-uninitialized)
++ [Validating integer values](#validating-integer-values)
 
 
 ## Associative arrays within functions cannot be made global
