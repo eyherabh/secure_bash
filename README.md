@@ -1,15 +1,16 @@
 # Secure bash
 
-Notes and tips beyond those found in [[1]] to make bash scripts safer and more portabble.
+Notes and tips beyond those found in [[1]] to make bash scripts safer, more resilient, and more portable. The notes and tips are based on actual scripts written by developers with various levels of maturity for operating on a range of systems which diverse and potentially outdated versions of bash are out of their control.
+
 
 + [Associative arrays within functions cannot be made global](#associative-arrays-within-functions-cannot-be-made-global)
 + [Assuming that `ls` starts with `.` and `..`](#assuming-that-ls-starts-with-.-and-..)
 + [Caution when mixing common and designated initializers](#caution-when-mixing-common-and-designated-initializers)
 + [Incomplete traversal of indexed arrays](#incomplete-traversal-of-indexed-arrays)
++ [Quoting and `printf %q` does not prevent word splitting](#quoting-and-printf-%q-does-not-prevent-word-splitting) 
 + [Strings in integer-valued variables](#strings-in-integer-valued-variables)
 + [Uninitialized array elements are left uninitialized](#uninitialized-array-elements-are-left-uninitialized)
 + [Validating integer values](#validating-integer-values)
-
 
 ## Associative arrays within functions cannot be made global
 
@@ -125,6 +126,64 @@ for i in ${!A[@]}; do
     # Do something with A[i-1] ...
 done
 ```
+
+## Quoting and `printf %q` does not prevent word splitting
+
+Complex calls are sometimes made by first building the command as a concatenation of strings and then expanding the string, as for example
+```
+set "." 1 1 "f o o" "bar"
+cmd="find"
+cmd+=" ${1:-.}"
+cmd+=" ${2:+-mindepth $2}"
+cmd+=" ${3:+-mindepth $3}"
+cmd+=" ${4:+-name $4}"
+cmd+=" ${5:+-not -name $5}"
+$cmd
+```
+Many problems exist with above, one of which is concerned with word-splitting. The above expands to
+```
+<find> <.> <-mindepth> <1> <-mindepth> <1> <-name> <foo> <-not> <-name> <bar>
+```
+where the angle brackets are used as delimiters. However, replacing `"foo"` with `"f o o"` would have resulted in
+```
+<find> <.> <-mindepth> <1> <-mindepth> <1> <-name> <f> <o> <o> <-not> <-name> <bar>
+```
+revealing that word-splitting has taken place for the fourth parameter. Typical attempts to prevent this consist in using single/double quotes or using `printf %q`. For example, using 
+```
+cmd+=" ${4:+-name '$4'}"
+```
+would result in `$cmd` expanding to
+```
+<find> <.> <-mindepth> <1> <-mindepth> <1> <-name> <'f> <o> <o'> <-not> <-name> <bar>
+```
+whereas using
+```
+cmd+=" ${4:+-name $(printf "%q" "$4")}"
+
+```
+would result in `$cmd` expanding to
+```
+<find> <.> <-mindepth> <1> <-mindepth> <1> <-name> <f\> <o\> <o> <-not> <-name> <bar>
+```
+Neither attempt has prevented word-splitting nor protect from injections, and both leave unintended characters after the parameter substitution. 
+
+These issues can be solved in at least two ways: by not evaluating through parameter substitution (described in another section), and by using arrays. In the latter case, the complex call could be constructed as follows
+```
+set "." 1 1 "f o o" "bar"
+cmd=("find")
+cmd+=("${1:-.}")
+cmd+=(${2:+-mindepth "$2"})
+cmd+=(${3:+-mindepth "$3"})
+cmd+=(${4:+-name "$4"})
+cmd+=(${5:+-not -name "$5"})
+"${cmd[@]}"
+```
+which expands to
+```
+<find> <.> <-mindepth> <1> <-mindepth> <1> <-name> <f o o> <-not> <-name> <bar>
+```
+
+
 
 
 
