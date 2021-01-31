@@ -10,6 +10,7 @@ Notes and tips beyond those found in [[1]] to make bash scripts safer, more resi
 + [Quoting and `printf %q` does not prevent word splitting](#quoting-and-printf-%q-does-not-prevent-word-splitting) 
 + [Strings in integer-valued variables](#strings-in-integer-valued-variables)
 + [Uninitialized array elements are left uninitialized](#uninitialized-array-elements-are-left-uninitialized)
++ [Uninitialized variables undetected by `set -u`](#uninitialized-variables-undetected-by-set--u)
 + [Validating integer values](#validating-integer-values)
 
 ## Associative arrays within functions cannot be made global
@@ -111,9 +112,13 @@ Associative arrays require the index to be provided, thus rendering any multiple
 ## Incomplete traversal of indexed arrays
 
 The length of an indexed array need not be equal to the index of the last element plus unity. For example, 
-```declare -a A=([1]=1) && echo ${#A[@]}```
+```
+declare -a A=([1]=1) && echo ${#A[@]}
+```
 will produce `1` instead of `2`. The same will occur after unsetting some of the array values, e.g.
-```declare -a A=(0 1) && unset "A[0]" && echo ${#A[@]}```
+```
+declare -a A=(0 1) && unset "A[0]" && echo ${#A[@]}
+```
 Hence, the following construction will not traverse over all set elements of `A`
 ```
 for i in $(seq 1 ${#A[@]}); do 
@@ -233,6 +238,67 @@ declare -ai A=(1 [2]=2)
 ```
 does not initialize `A[1]` to zero as it would be in C [[3]]. The same applies to single variables. As a result, integer comparisons are not always guaranteed to succeed for variables even if their integer attribute is set.
 
+## Uninitialized variables undetected by `set -u`
+
+According to [2], one way to detect the use of unset (a.k.a. unbound) variables is through the shell option `nounset`, activated throuhg `set -u` or `set -o nounset`). After that, the shell will treat as an error any use of unset variables other than `@` and `\*` as an error. However, turns out that this is not always the case for array expansions (at least in Bash 5.0.17). 
+
+Specifically, consider the following script
+```
+declare -a A
+: ${A[0]}
+```
+In agreement with [2], the line immediately after the declaration is treated as an error. Indeed, it's trying to access an element that is unset. Analogous results are observed when running the following script
+```
+declare -a A=(1 2)
+: ${A[2]}
+```
+This script differs from the previous one in that the array is initialized, but the array access is out of bounds. However, seemingly in contradiction with [2], the following script runs without error
+```
+declare -a A
+: ${A[@]}
+: ${A[*]}
+: ${!A[@]}
+: ${!A[*]}
+```
+The same result is observed when the array is declared as associative, namely `declare -A A`. In conclusion, the shell option `nounset` does not entirely prevent the use of unset variables in parameter expansion.
+
+One way to solve this issue is by testing during parameter expansions through the construct `${par?msg}`. For example, the following script
+```
+declare -a A
+: ${A[@]?}
+: ${A[*]?}
+: ${!A[@]?}
+: ${!A[*]?}
+```
+treats all expansions as errors and produce some standard error message. Unfortunately, this strategy also has its problems as well. 
+
+Consider the following script
+```
+declare -a A=(0 1 2)
+echo "${A[@]}"
+echo "${!A[@]}"
+```
+which, unsurprisingly, produces
+```
+0 1 2
+0 1 2
+```
+However, consider now the same script but using the `${par?msg}` construct
+```
+declare -a A=(0 1 2)
+echo "${A[@]?}"
+echo "${!A[@]?}"
+```
+This time, the result is actually surprising
+```
+0 1 2
+bash: 0 1 2: invalid variable name
+```
+Instead of simply printing the array indexes, the second line was treated as an error.
+
+
+Even when the result is satisfactory, the potential benefits of using of the `nounset` option or `${par?msg}` (but see [4]) are limited by the fact that the standard error messages may be slightly confusing or misleading. For example, when `A` is unset, all `: ${A?}`, `: ${!A?}`, `: ${A[@]?}` and `: ${!A[@]?}` produce the message `parameter not set`. However, this is not the case when `A` is set to an unset variable `B`. In that case, `${A?}` and `: ${A[@]?}` produce no errors as expected, but `: ${!A?}` produces `invalid indirect expansion` whereas `: ${!A[@]?}` produces `parameter not set`.
+
 
 ## Validating integer values
 
@@ -248,7 +314,9 @@ The first case is activated unless `val` starts with `+`, `-`, or a digit, and a
 [1]: https://mywiki.wooledge.org/BashPitfalls
 [2]: https://www.gnu.org/software/bash/manual/html_node/Arrays.html
 [3]: http://www2.open-std.org/JTC1/SC22/WG14/www/abq/c17_updated_proposed_fdis.pdf
+[4]: https://mywiki.wooledge.org/BashFAQ/112
 
 1. [Bash pitfalls](https://mywiki.wooledge.org/BashPitfalls)
 2. [Bash reference manual](https://www.gnu.org/software/bash/manual/html_node/Arrays.html)
 3. [C17 standard draft N2176](http://www2.open-std.org/JTC1/SC22/WG14/www/abq/c17_updated_proposed_fdis.pdf)
+4. [What are the advantages and disadvantages of using set -u (or set -o nounset)?](https://mywiki.wooledge.org/BashFAQ/112)
