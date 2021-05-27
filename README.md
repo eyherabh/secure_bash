@@ -1,6 +1,6 @@
 # Secure bash
 
-Notes and tips beyond those found in [[1]] to make bash scripts safer, more resilient, and more portable. The notes and tips are based on actual scripts written by developers with various levels of maturity for operating on a range of systems which diverse and potentially outdated versions of bash are out of their control.
+Notes and tips beyond those found in [[1]] to make bash scripts safer, more resilient, and more portable in the face of real-world production application having to perform in multiple possibly outdated systems. 
 
 
 + [Associative arrays within functions cannot be made global](#associative-arrays-within-functions-cannot-be-made-global)
@@ -15,59 +15,62 @@ Notes and tips beyond those found in [[1]] to make bash scripts safer, more resi
 
 ## Associative arrays within functions cannot be made global
 
-Consider the following script
+In Bash 4.2, using `declare -g` within a function causes associative arrays to be left empty both inside and outside the function. This is a known bug and has already been fixed, but it is still relevant, for example, in systems like CentOS 7. To illustrate the issue, consider first the following script
+
 ```
 a() { 
     declare -ag A=([0]=1 [1]=2) 
     printf "Within a: $(declare -p A)\n"
 }
+unset -v A 
 
+a
+printf "After a: $(declare -p A)\n"
+```
+which produces the following output
+```
+Within a: declare -a A='([0]=1 [1]=2)'
+After a: declare -a A='([0]=1 [1]=2)'
+```
+In this case, the script created a global indexed array and, as expected, the values persist after `declare` both inside and outside the function. Now consider an analogous script that declares an associative array instead
+```
 b() { 
     declare -Ag B=([0]=1 [1]=2) 
     printf "Within b: $(declare -p B)\n"
 }
-
-unset -v A B
-
-a
-printf "After a: $(declare -p A)\n"
+unset -v B
 
 b
 printf "After b: $(declare -p B)\n"
 ```
 which produces the following output
 ```
-Within a: declare -a A='([0]=1 [1]=2)'
-After a: declare -a A='([0]=1 [1]=2)'
 Within b: declare -A B='()'
 After b: declare -A B='()'
 ```
-Turns out that the flag `-g` passed to `declare` causes associative arrays to be left empty. This is a known bug that has already been fixed, but it is still relevant, for example, in systems shipping bash 4.2 (e.g. CentOS 7).
+Unlike the previous script, the output of this one shows that the created array is empty.
 
-Analogous effects are observed when attempting to use `-g`, for example, in the same way as `-r`, that is
+Analogous effects are observed when first declaring the array and then attempting to use `-g` as if it were setting an attribute (analogously to the `-r` flag)
 ```
 c() {
     declare -a C=(1 2)
     declare -g C
 }
 ```
-This may be argued as documented and hence expected. Specifically, `help declare` states that the flag `-g` is used at the moment of creation as opposed to setting attributes. Nevertheless, current versions of bash seem to preserve the values, albeit not turning a variable previously declared as local into a global one.
+except that this time it happens regardless of the array type. This observation may be argued as documented and hence expected. Specifically, `help declare` states that the flag `-g` is used at the moment of creation as opposed to setting attributes. Nevertheless, current versions of bash seem to preserve the values, albeit not turning a variable previously declared as local into a global one.
 
 
 ## Assuming that `ls` starts with `.` and `..`
 
-The list produced by `ls -a` need not start with `.` followed by `..`, as for example. Instead, I found that files named `^`, `<`, `=`, `>`, `_`, `:`, `;`, `!`, and `?` are all listed first. For example, the files named `_` and `?` will not appear as below
-
+The list produced by `ls -a` need not always start with `.` followed by `..`. Instead, I found that files named `^`, `<`, `=`, `>`, `_`, `:`, `;`, `!`, and `?` are all listed before them. Specifically, in a folder with files named `_` and `?`, `ls -a` will list them not as 
 ```bash
-> ls -a
 .
 ..
 _
 ?
 ```
-but like this instead
+but as follows
 ```bash
-> ls -a
 _
 ?
 .
@@ -75,10 +78,7 @@ _
 ```
 The list of file names appearing before `.` and `..` mentioned above is not exhaustive, and their order of appearance might well depend on the bash version and locale. 
 
-Those file names may indeed be regarded as extremely unlikely, yet they may still occur by error or on purpose and break scripts. For example, a script relying on `.` and `..` appearing first may attempt to ignore them through `ls -1 | tail -n +3`. That script would have failed in the example above. Excluding them can be achieved through `ls -A`. 
-
-It may sound contrived that one would use `ls -1 | tail -n +3` instead of `ls -A`, particularly since the latter is shorter. However, one may well have ignored the latter construct and missed it when reading the man page for `ls`.
-
+Those file names may indeed be regarded as extremely unlikely, yet they may still occur (by error or on purpose) and break scripts. Scripts relying on `.` and `..` appearing first and using `ls -1 | tail -n +3` to filter them are not that rare, and would have failed in the example above. Instead, `.` and `..` can be excluded by using `ls -A`, which is also shorter, or use `find`. 
 
 ## Caution when mixing common and designated initializers
 
